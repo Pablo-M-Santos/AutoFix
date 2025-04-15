@@ -21,6 +21,11 @@ builder.Services.AddCors(options =>
                    .AllowAnyHeader();
         });
 });
+
+builder.Services.Configure<AdminUserSettings>(
+    builder.Configuration.GetSection("AdminUser")
+);
+
 // regista os controllers da aplicação para que o ASP.NET Core saiba como lidar com requisições HTTP
 builder.Services.AddControllers();
 
@@ -67,6 +72,28 @@ builder.Services.AddSwaggerGen();
 
 // Depois de registrar os serviços, agora monta o app real
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    var adminConfig = config.GetSection("AdminUser").Get<AdminUserSettings>();
+
+    if (!context.Usuarios.Any(u => u.Email == adminConfig.Email))
+    {
+        var senhaHash = BCrypt.Net.BCrypt.HashPassword(adminConfig.Password);
+        var admin = new Usuario
+        {
+            Nome = adminConfig.Nome,
+            Email = adminConfig.Email,
+            SenhaHash = senhaHash,
+            Role = adminConfig.Role
+        };
+
+        context.Usuarios.Add(admin);
+        context.SaveChanges();
+    }
+}
 
 // Ativa o swagger so em ambiente de desenvolvimento
 if (app.Environment.IsDevelopment())

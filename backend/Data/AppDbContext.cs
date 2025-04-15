@@ -21,6 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<CategoriaAtributo> CategoriaAtributos { get; set; }
     public DbSet<Produto> Produtos { get; set; }
     public DbSet<ProdutoAtributo> ProdutoAtributos { get; set; }
+
 }
 
 

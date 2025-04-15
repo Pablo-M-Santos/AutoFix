@@ -61,7 +61,7 @@ public class AuthController : ControllerBase
             Nome = request.Nome,
             Email = request.Email,
             SenhaHash = BCrypt.Net.BCrypt.HashPassword(request.Senha),
-            Role = string.IsNullOrWhiteSpace(request.Role) ? "Cliente" : request.Role
+            Role = "Cliente"
         };
 
         _context.Usuarios.Add(usuario);
@@ -124,17 +124,32 @@ public class AuthController : ControllerBase
     }
 
     [Authorize(Roles = "Administrador")]
-    [HttpGet("admin")]
-    public IActionResult GetAdminData()
+    [HttpPost("register-admin")]
+    public async Task<IActionResult> RegisterAdmin([FromBody] UsuarioDTO request)
     {
-        return Ok("Você é um administrador!");
-    }
+        var validationResult = await _validator.ValidateAsync(request);
 
-    [Authorize(Roles = "Cliente")]
-    [HttpGet("cliente")]
-    public IActionResult GetClienteData()
-    {
-        return Ok("Você é um cliente!");
+        if (!validationResult.IsValid)
+        {
+            var mensagensErro = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
+            return BadRequest(mensagensErro);
+        }
+
+        if (await _context.Usuarios.AnyAsync(u => u.Email == request.Email))
+            return BadRequest("Email já cadastrado.");
+
+        var usuario = new Usuario
+        {
+            Nome = request.Nome,
+            Email = request.Email,
+            SenhaHash = BCrypt.Net.BCrypt.HashPassword(request.Senha),
+            Role = "Administrador" 
+        };
+
+        _context.Usuarios.Add(usuario);
+        await _context.SaveChangesAsync();
+
+        return Ok("Administrador registrado com sucesso.");
     }
 
 }
