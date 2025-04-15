@@ -15,7 +15,13 @@ export default function Login() {
         email,
         senha,
       });
-      localStorage.setItem("token", response.data.token);
+
+      const { token, role, email: userEmail, nome } = response.data;
+      localStorage.setItem("token", token);
+      localStorage.setItem("role", role);
+      localStorage.setItem("email", userEmail);
+      localStorage.setItem("nome", nome);
+
       navigate("/home");
     } catch (error) {
       alert("Login inválido");

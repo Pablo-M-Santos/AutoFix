@@ -92,7 +92,7 @@ public class AuthController : ControllerBase
 
         var token = GenerateJwtToken(usuario);
 
-        return Ok(new { Token = token });
+        return Ok(new { Token = token, usuario.Nome, usuario.Email, usuario.Role });
     }
 
     private string GenerateJwtToken(Usuario usuario)

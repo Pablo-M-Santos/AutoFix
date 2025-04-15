@@ -45,26 +45,53 @@ public class CategoriaController : ControllerBase
     }
 
 
-    [HttpGet]
-    [AllowAnonymous]
-    public async Task<IActionResult> GetCategorias()
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Administrador")]
+    public async Task<IActionResult> AtualizarCategoria(int id, [FromBody] CategoriaDTO dto)
     {
-        var categorias = await _context.Categorias
+        var categoria = await _context.Categorias
             .Include(c => c.Atributos)
-            .ToListAsync();
+            .FirstOrDefaultAsync(c => c.Id == id);
 
-        var categoriaDTOs = categorias.Select(c => new CategoriaResponseDTO
+        if (categoria == null)
+            return NotFound("Categoria não encontrada");
+
+        categoria.Nome = dto.Nome;
+
+        // Remove os atributos antigos
+        _context.RemoveRange(categoria.Atributos);
+
+        // Adiciona os novos
+        categoria.Atributos = dto.Atributos.Select(a => new CategoriaAtributo
         {
-            Id = c.Id,
-            Nome = c.Nome,
-            Atributos = c.Atributos.Select(a => new CategoriaAtributoDTO
-            {
-                Nome = a.Nome
-            }).ToList()
+            Nome = a.Nome
         }).ToList();
 
-        return Ok(categoriaDTOs);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
+
+    [HttpDelete("{id}")]
+    [Authorize(Roles = "Administrador")]
+    public async Task<IActionResult> DeletarCategoria(int id)
+    {
+        var categoria = await _context.Categorias
+            .Include(c => c.Atributos)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (categoria == null)
+            return NotFound("Categoria não encontrada");
+
+        _context.RemoveRange(categoria.Atributos); // Remove os atributos
+        _context.Categorias.Remove(categoria);     // Remove a categoria
+
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+
 
 
 }
